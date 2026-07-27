@@ -1,0 +1,89 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "This scooter is already configured",
+      "no_devices_found": "No Bluetooth devices found nearby. Switch the scooter on, make sure it is in Bluetooth range, and that the Mi Home app is not connected to it.",
+      "reauth_successful": "Your scooter was paired again"
+    },
+    "flow_title": "{name}",
+    "step": {
+      "bluetooth_confirm": {
+        "description": "Do you want to set up {name}?"
+      },
+      "user": {
+        "title": "Xiaomi M365 Scooter",
+        "description": "Select your scooter from the discovered Bluetooth devices. If none was recognised by name — a renamed scooter, or custom firmware — every nearby device is listed instead, so pick yours out by its Bluetooth address.",
+        "data": {
+          "address": "Scooter"
+        }
+      },
+      "pair": {
+        "title": "Pair with your scooter",
+        "description": "{name} may need pairing before it will report anything. This is checked first, and if pairing is needed the scooter will beep — **press its power button as soon as you hear the beep**. Several attempts are made, so you have more than one chance.\n\nNote that a scooter remembers only one pairing: pairing here will sign out the Mi Home app or ScooterHacking Utility until you pair those again."
+      },
+      "reauth_confirm": {
+        "title": "Pair with your scooter again",
+        "description": "{name} no longer accepts its stored pairing, which happens when the scooter is paired with the Mi Home app or ScooterHacking Utility — it remembers only one at a time.\n\nTo pair again, **press the scooter's power button as soon as you hear it beep**."
+      }
+    },
+    "error": {
+      "pairing_failed": "Could not pair with the scooter. Check that it is switched on and in range, that no other app is connected to it, and that its power button was pressed when it beeped."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Xiaomi M365 Scooter options",
+        "description": "A shorter interval keeps speed and trip data current while riding, at the cost of more Bluetooth traffic.",
+        "data": {
+          "update_interval": "Polling interval"
+        }
+      }
+    }
+  },
+  "entity": {
+    "lock": {
+      "motor_lock": {
+        "name": "Motor lock"
+      }
+    },
+    "sensor": {
+      "average_speed": {
+        "name": "Average speed"
+      },
+      "battery": {
+        "name": "Battery"
+      },
+      "battery_capacity": {
+        "name": "Battery remaining capacity"
+      },
+      "battery_current": {
+        "name": "Battery current"
+      },
+      "battery_temperature": {
+        "name": "Battery temperature"
+      },
+      "battery_voltage": {
+        "name": "Battery voltage"
+      },
+      "frame_temperature": {
+        "name": "Frame temperature"
+      },
+      "odometer": {
+        "name": "Odometer"
+      },
+      "range_remaining": {
+        "name": "Range remaining"
+      },
+      "speed": {
+        "name": "Speed"
+      },
+      "trip_distance": {
+        "name": "Trip distance"
+      },
+      "trip_time": {
+        "name": "Trip time"
+      }
+    }
+  }
+}

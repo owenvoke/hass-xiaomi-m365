@@ -1,0 +1,12 @@
+# Python build artifacts
+dist/
+build/
+*.egg-info/
+
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Hatch
+.hatch/

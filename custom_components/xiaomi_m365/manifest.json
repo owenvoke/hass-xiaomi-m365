@@ -1,0 +1,17 @@
+{
+  "domain": "xiaomi_m365",
+  "name": "Xiaomi M365 Scooter",
+  "bluetooth": [
+    { "local_name": "MIScooter*" },
+    { "local_name": "MIBanner*" }
+  ],
+  "codeowners": ["@owenvoke"],
+  "config_flow": true,
+  "dependencies": ["bluetooth"],
+  "documentation": "https://github.com/owenvoke/hass-xiaomi-m365",
+  "integration_type": "device",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/owenvoke/hass-xiaomi-m365/issues",
+  "requirements": [],
+  "version": "0.0.0"
+}
