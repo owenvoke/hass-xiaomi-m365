@@ -11,6 +11,20 @@ requires-python = ">=3.14.2"
 lint = [
     "ruff==0.17.0",
 ]
+test = [
+    "pytest-homeassistant-custom-component==0.13.373",
+    # Home Assistant's bluetooth integration, which this one depends on, keeps
+    # its requirements in its manifest rather than in the package metadata.
+    "aiousbwatcher==1.1.2",
+    "bleak==3.0.2",
+    "bleak-retry-connector==4.7.1",
+    "bluetooth-adapters==2.4.0",
+    "bluetooth-auto-recovery==1.6.4",
+    "bluetooth-data-tools==1.29.24",
+    "dbus-fast==5.0.22",
+    "habluetooth==7.1.2",
+    "serialx==1.11.0",
+]
 
 [tool.hatch.version]
 source = "vcs"
@@ -23,14 +37,23 @@ packages = ["custom_components/xiaomi_m365"]
 features = ["lint"]
 
 [tool.hatch.envs.default.scripts]
-test = [
+lint = [
     "ruff format --check --diff .",
     "ruff check .",
 ]
-lint = [
+fix = [
     "ruff format .",
     "ruff check --fix .",
 ]
+
+[tool.hatch.envs.test]
+python = "3.14"
+features = ["test"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 target-version = "py314"
