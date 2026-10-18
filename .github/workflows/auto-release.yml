@@ -65,6 +65,6 @@ jobs:
         with:
           tag_name: ${{ needs.resolve-version.outputs.new-release-git-tag }}
           draft: true
-          prerelease: ${{ startsWith('v0.', needs.resolve-version.outputs.new-release-git-tag) || contains('-next', needs.resolve-version.outputs.new-release-git-tag) }}
+          prerelease: ${{ startsWith(needs.resolve-version.outputs.new-release-git-tag, 'v0.') || contains(needs.resolve-version.outputs.new-release-git-tag, '-next') }}
           body: |
             ${{ needs.resolve-version.outputs.new-release-notes }}
