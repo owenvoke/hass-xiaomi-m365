@@ -131,16 +131,21 @@ class M365DataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.data = dict(stored)
             _LOGGER.debug("%s: restored %d value(s)", self.address, len(self.data))
 
+    def _persisted_data(self) -> dict[str, Any]:
+        """Return the values worth restoring."""
+        return {k: v for k, v in self.data.items() if k not in UNPERSISTED_KEYS}
+
     def _save_data(self) -> None:
         """Queue a debounced write of the values worth restoring."""
-        self._store.async_delay_save(
-            lambda: {k: v for k, v in self.data.items() if k not in UNPERSISTED_KEYS},
-            STORAGE_SAVE_DELAY,
-        )
+        self._store.async_delay_save(self._persisted_data, STORAGE_SAVE_DELAY)
 
     async def async_shutdown(self) -> None:
-        """Close the BLE connection when the entry unloads."""
+        """Save what is pending and close the BLE connection on unload."""
         await super().async_shutdown()
+        # A delayed save only flushes when Home Assistant stops, so without
+        # this a reload soon after a poll would restore the poll before it.
+        if self.data:
+            await self._store.async_save(self._persisted_data())
         await self.transport.async_disconnect()
 
     async def _async_update_data(self) -> dict[str, Any]:
