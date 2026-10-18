@@ -261,10 +261,15 @@ class M365ConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "pairing_failed"
             else:
                 entry = self._get_reauth_entry()
-                return self.async_update_reload_and_abort(
-                    entry,
-                    data_updates={CONF_TOKEN: token.hex()} if token else {},
-                )
+                data = dict(entry.data)
+                if token is None:
+                    # The scooter now answers without pairing; keeping the old
+                    # token would only fail the next login and loop back here.
+                    data.pop(CONF_TOKEN, None)
+                else:
+                    data[CONF_TOKEN] = token.hex()
+
+                return self.async_update_reload_and_abort(entry, data=data)
 
         return self.async_show_form(
             step_id="reauth_confirm",

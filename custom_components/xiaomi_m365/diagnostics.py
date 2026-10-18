@@ -7,10 +7,12 @@ from typing import Any
 from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_ADDRESS
+from .const import CONF_ADDRESS, CONF_TOKEN
 from .types import M365ConfigEntry
 
-TO_REDACT = {CONF_ADDRESS, "serial_number"}
+# The token is the pairing secret itself, and diagnostics end up attached to
+# public issues.
+TO_REDACT = {CONF_ADDRESS, CONF_TOKEN, "serial_number"}
 
 
 async def async_get_config_entry_diagnostics(
