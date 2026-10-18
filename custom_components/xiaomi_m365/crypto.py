@@ -134,21 +134,20 @@ def registration_secret(
     return encrypted_id, token
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class MiSession:
     """The session keys a login yields, and the traffic they protect.
 
     One key and one IV per direction, so a frame is never encrypted under the
     same material as the frame answering it. The counter forms part of the
-    nonce and advances once per frame sent, which is why a frozen dataclass
-    still carries mutable state.
+    nonce and advances once per frame sent.
     """
 
     app_key: bytes
     app_iv: bytes
     device_key: bytes
     device_iv: bytes
-    _counter: list[int] = field(default_factory=lambda: [0])
+    _counter: int = field(default=0, init=False)
 
     @staticmethod
     def _nonce(iv: bytes, counter: int) -> bytes:
@@ -157,8 +156,8 @@ class MiSession:
 
     def encrypt(self, frame: bytes) -> bytes:
         """Wrap a plain ``55 AA`` frame as an encrypted ``55 AB`` one."""
-        counter = self._counter[0]
-        self._counter[0] += 1
+        counter = self._counter
+        self._counter += 1
 
         length = frame[2:3]
         # The plain frame's own checksum is dropped rather than encrypted: the

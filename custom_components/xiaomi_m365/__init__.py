@@ -10,9 +10,8 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 
 from .const import CONF_ADDRESS, CONF_TOKEN, DOMAIN
-from .coordinator import M365DataCoordinator, async_remove_stored_data
+from .coordinator import M365ConfigEntry, M365DataCoordinator, async_remove_stored_data
 from .transport import M365Transport
-from .types import M365ConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 

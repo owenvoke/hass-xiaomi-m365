@@ -83,6 +83,9 @@ UNPERSISTED_KEYS: Final = frozenset(
 )
 
 
+type M365ConfigEntry = ConfigEntry[M365DataCoordinator]
+
+
 def _storage_key(entry_id: str) -> str:
     return f"{DOMAIN}.{entry_id}"
 
@@ -98,7 +101,7 @@ class M365DataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(
         self,
         hass: HomeAssistant,
-        entry: ConfigEntry,
+        entry: M365ConfigEntry,
         transport: M365Transport,
     ) -> None:
         """Initialize the coordinator."""

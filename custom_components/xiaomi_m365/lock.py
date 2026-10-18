@@ -8,9 +8,8 @@ from homeassistant.components.lock import LockEntity, LockEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import M365DataCoordinator
+from .coordinator import M365ConfigEntry, M365DataCoordinator
 from .entity import M365Entity
-from .types import M365ConfigEntry
 
 LOCK_DESCRIPTION = LockEntityDescription(
     key="motor_lock",
