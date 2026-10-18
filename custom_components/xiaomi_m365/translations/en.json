@@ -3,7 +3,8 @@
     "abort": {
       "already_configured": "This scooter is already configured",
       "no_devices_found": "No Bluetooth devices found nearby. Switch the scooter on, make sure it is in Bluetooth range, and that the Mi Home app is not connected to it.",
-      "reauth_successful": "Your scooter was paired again"
+      "reauth_successful": "Your scooter was paired again",
+      "reconfigure_successful": "Your scooter was paired again"
     },
     "flow_title": "{name}",
     "step": {
@@ -15,6 +16,9 @@
         "description": "Select your scooter from the discovered Bluetooth devices. If none was recognised by name — a renamed scooter, or custom firmware — every nearby device is listed instead, so pick yours out by its Bluetooth address.",
         "data": {
           "address": "Scooter"
+        },
+        "data_description": {
+          "address": "Scooters are listed by advertised name and Bluetooth address."
         }
       },
       "pair": {
@@ -24,10 +28,17 @@
       "reauth_confirm": {
         "title": "Pair with your scooter again",
         "description": "{name} no longer accepts its stored pairing, which happens when the scooter is paired with the Mi Home app or ScooterHacking Utility — it remembers only one at a time.\n\nTo pair again, **press the scooter's power button as soon as you hear it beep**."
+      },
+      "reconfigure": {
+        "title": "Pair with your scooter again",
+        "description": "Pair {name} again — for example after pairing it with the Mi Home app or ScooterHacking Utility, which signs this integration out.\n\nIf the scooter beeps, **press its power button as soon as you hear it**."
       }
     },
     "error": {
       "pairing_failed": "Could not pair with the scooter. Check that it is switched on and in range, that no other app is connected to it, and that its power button was pressed when it beeped."
+    },
+    "progress": {
+      "pairing": "Pairing with {name}. If the scooter beeps, **press its power button straight away**. This can take a couple of minutes over several attempts."
     }
   },
   "options": {
@@ -37,6 +48,9 @@
         "description": "A shorter interval keeps speed and trip data current while riding, at the cost of more Bluetooth traffic.",
         "data": {
           "update_interval": "Polling interval"
+        },
+        "data_description": {
+          "update_interval": "How often to poll the scooter while it is switched on, in seconds."
         }
       }
     }
@@ -84,6 +98,14 @@
       "trip_time": {
         "name": "Trip time"
       }
+    }
+  },
+  "exceptions": {
+    "scooter_asleep": {
+      "message": "The scooter is switched off or out of Bluetooth range."
+    },
+    "lock_failed": {
+      "message": "Could not change the motor lock: {error}"
     }
   }
 }

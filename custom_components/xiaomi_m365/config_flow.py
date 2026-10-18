@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Mapping
 import logging
 from typing import Any
@@ -13,12 +14,14 @@ from homeassistant.components.bluetooth import (
     async_discovered_service_info,
 )
 from homeassistant.config_entries import (
+    SOURCE_REAUTH,
+    SOURCE_RECONFIGURE,
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
     OptionsFlowWithReload,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import selector
 
 from .const import (
@@ -85,6 +88,23 @@ async def _async_pair(hass: HomeAssistant, address: str) -> bytes | None:
         await transport.async_disconnect()
 
 
+async def _async_pair_entry(hass: HomeAssistant, entry: ConfigEntry) -> bytes | None:
+    """Pair the scooter behind an existing entry.
+
+    The scooter takes one connection at a time, and a loaded entry holds it
+    between polls, so the entry is unloaded for the duration. On success the
+    flow reloads it with the new token; on failure, or if the flow is closed
+    mid-pairing, it is brought back as it was.
+    """
+    await hass.config_entries.async_unload(entry.entry_id)
+
+    try:
+        return await _async_pair(hass, entry.data[CONF_ADDRESS])
+    except BaseException:
+        hass.config_entries.async_schedule_reload(entry.entry_id)
+        raise
+
+
 def _label(service_info: BluetoothServiceInfoBleak) -> str:
     """Return a row for the device picker.
 
@@ -109,6 +129,10 @@ class M365ConfigFlow(ConfigFlow, domain=DOMAIN):
         self._discovered: dict[str, BluetoothServiceInfoBleak] = {}
         self._address: str | None = None
         self._title: str | None = None
+        self._pair_step = "pair"
+        self._pair_task: asyncio.Task[bytes | None] | None = None
+        self._token: bytes | None = None
+        self._errors: dict[str, str] = {}
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -210,74 +234,133 @@ class M365ConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_pair(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Pair with the scooter, if its firmware insists on being paired.
+        """Explain pairing before starting it.
 
-        Older firmware answers a plain read and needs nothing here, so this
+        Older firmware answers a plain read and needs nothing here, so pairing
         asks the scooter before asking the person: only if the read goes
-        unanswered does it come back for a button press.
+        unanswered does it wait for a button press.
         """
-        assert self._address is not None
-        errors: dict[str, str] = {}
-
-        if user_input is not None:
-            try:
-                token = await _async_pair(self.hass, self._address)
-            except M365AuthError as err:
-                _LOGGER.debug("%s: pairing failed: %s", self._address, err)
-                errors["base"] = "pairing_failed"
-            else:
-                data = {CONF_ADDRESS: self._address}
-                if token is not None:
-                    data[CONF_TOKEN] = token.hex()
-
-                return self.async_create_entry(title=self._title or "", data=data)
-
-        return self.async_show_form(
-            step_id="pair",
-            errors=errors,
-            description_placeholders={"name": self._title or self._address},
-        )
+        return await self._async_step_confirm_pairing("pair", user_input)
 
     async def async_step_reauth(
         self, entry_data: Mapping[str, Any]
     ) -> ConfigFlowResult:
         """Handle a token the scooter has stopped honouring."""
         self._address = entry_data[CONF_ADDRESS]
-        self._title = self.context.get("title_placeholders", {}).get("name")
+        self._title = self._get_reauth_entry().title
         return await self.async_step_reauth_confirm()
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Pair again, keeping the existing entry and its history."""
+        return await self._async_step_confirm_pairing("reauth_confirm", user_input)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Pair again on request, such as after using the Mi Home app."""
+        entry = self._get_reconfigure_entry()
+        self._address = entry.data[CONF_ADDRESS]
+        self._title = entry.title
+        return await self._async_step_confirm_pairing("reconfigure", user_input)
+
+    async def _async_step_confirm_pairing(
+        self, step_id: str, user_input: dict[str, Any] | None
+    ) -> ConfigFlowResult:
+        """Show a step's pairing instructions, then start pairing on submit.
+
+        A failed attempt comes back here with the error, so the step is
+        remembered for the progress step to return to.
+        """
         assert self._address is not None
-        errors: dict[str, str] = {}
 
         if user_input is not None:
-            try:
-                token = await _async_pair(self.hass, self._address)
-            except M365AuthError as err:
-                _LOGGER.debug("%s: re-pairing failed: %s", self._address, err)
-                errors["base"] = "pairing_failed"
-            else:
-                entry = self._get_reauth_entry()
-                data = dict(entry.data)
-                if token is None:
-                    # The scooter now answers without pairing; keeping the old
-                    # token would only fail the next login and loop back here.
-                    data.pop(CONF_TOKEN, None)
-                else:
-                    data[CONF_TOKEN] = token.hex()
+            self._pair_step = step_id
+            self._errors = {}
+            return await self.async_step_pairing()
 
-                return self.async_update_reload_and_abort(entry, data=data)
-
+        errors, self._errors = self._errors, {}
         return self.async_show_form(
-            step_id="reauth_confirm",
+            step_id=step_id,
             errors=errors,
             description_placeholders={"name": self._title or self._address},
         )
 
+    async def async_step_pairing(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Pair in the background, showing progress while it runs.
+
+        Pairing can take a couple of minutes over several attempts while
+        someone finds the power button, which is too long to hold a form
+        submission open.
+        """
+        assert self._address is not None
+
+        if self._pair_task is None:
+            self._pair_task = self.hass.async_create_task(
+                self._async_pair(), eager_start=False
+            )
+
+        if not self._pair_task.done():
+            return self.async_show_progress(
+                step_id="pairing",
+                progress_action="pairing",
+                progress_task=self._pair_task,
+                description_placeholders={"name": self._title or self._address},
+            )
+
+        task, self._pair_task = self._pair_task, None
+        try:
+            self._token = task.result()
+        except M365AuthError as err:
+            _LOGGER.debug("%s: pairing failed: %s", self._address, err)
+            self._errors = {"base": "pairing_failed"}
+            return self.async_show_progress_done(next_step_id=self._pair_step)
+
+        return self.async_show_progress_done(next_step_id="pair_finish")
+
+    async def _async_pair(self) -> bytes | None:
+        """Pair the scooter this flow is for."""
+        assert self._address is not None
+
+        if self.source == SOURCE_REAUTH:
+            return await _async_pair_entry(self.hass, self._get_reauth_entry())
+        if self.source == SOURCE_RECONFIGURE:
+            return await _async_pair_entry(self.hass, self._get_reconfigure_entry())
+        return await _async_pair(self.hass, self._address)
+
+    async def async_step_pair_finish(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Create the entry, or update the one being paired again."""
+        assert self._address is not None
+
+        if self.source in (SOURCE_REAUTH, SOURCE_RECONFIGURE):
+            entry = (
+                self._get_reauth_entry()
+                if self.source == SOURCE_REAUTH
+                else self._get_reconfigure_entry()
+            )
+            data = dict(entry.data)
+            if self._token is None:
+                # The scooter now answers without pairing; keeping the old
+                # token would only fail the next login and loop back to reauth.
+                data.pop(CONF_TOKEN, None)
+            else:
+                data[CONF_TOKEN] = self._token.hex()
+
+            return self.async_update_reload_and_abort(entry, data=data)
+
+        data = {CONF_ADDRESS: self._address}
+        if self._token is not None:
+            data[CONF_TOKEN] = self._token.hex()
+
+        return self.async_create_entry(title=self._title or "", data=data)
+
     @staticmethod
+    @callback
     def async_get_options_flow(entry: ConfigEntry) -> M365OptionsFlow:
         """Return the options flow."""
         return M365OptionsFlow()
@@ -291,7 +374,10 @@ class M365OptionsFlow(OptionsFlowWithReload):
     ) -> ConfigFlowResult:
         """Manage the poll interval."""
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            # The selector hands back a float; the interval is whole seconds.
+            return self.async_create_entry(
+                data={CONF_UPDATE_INTERVAL: int(user_input[CONF_UPDATE_INTERVAL])}
+            )
 
         current = self.config_entry.options.get(
             CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL

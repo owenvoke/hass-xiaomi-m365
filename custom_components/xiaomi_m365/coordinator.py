@@ -8,7 +8,7 @@ from typing import Any, Final
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -233,7 +233,18 @@ class M365DataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         the state has to be read back, which the refresh below does.
         """
         register = REG_LOCK if locked else REG_UNLOCK
-        await self.transport.async_write(Device.ESC, register, LOCK_WRITE_PAYLOAD)
+        try:
+            await self.transport.async_write(Device.ESC, register, LOCK_WRITE_PAYLOAD)
+        except M365DeviceAsleep as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="scooter_asleep"
+            ) from err
+        except M365Error as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="lock_failed",
+                translation_placeholders={"error": str(err)},
+            ) from err
 
         # Show the requested state straight away; the refresh confirms it.
         self.async_set_updated_data({**self.data, "is_locked": locked})

@@ -168,7 +168,14 @@ class M365Transport:
             _LOGGER.debug("%s: connected", self._address)
 
             if self._token is not None:
-                await self._async_login(client)
+                try:
+                    await self._async_login(client)
+                except M365Error:
+                    # Not yet stored as self._client, so nothing else would
+                    # close it — and the scooter takes no second connection
+                    # while this one stays open.
+                    await self._async_close(client)
+                    raise
 
             self._client = client
             return client
@@ -369,7 +376,12 @@ class M365Transport:
         client, self._client = self._client, None
         self._forget_session()
 
-        if client is None or not client.is_connected:
+        if client is not None:
+            await self._async_close(client)
+
+    async def _async_close(self, client: BleakClientWithServiceCache) -> None:
+        """Disconnect ``client``, reporting rather than raising on failure."""
+        if not client.is_connected:
             return
 
         try:
