@@ -313,7 +313,7 @@ class EncryptedFrameReader:
 
             try:
                 return total, self._session.decrypt(frame)
-            except (InvalidTag, ValueError, IndexError):
+            except InvalidTag, ValueError, IndexError:
                 continue
 
         return None

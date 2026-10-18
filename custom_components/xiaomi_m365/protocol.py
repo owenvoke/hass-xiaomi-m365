@@ -141,6 +141,7 @@ class FrameReader:
     """
 
     def __init__(self) -> None:
+        """Initialize an empty reader."""
         self._buffer = bytearray()
 
     def reset(self) -> None:

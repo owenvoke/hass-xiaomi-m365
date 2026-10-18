@@ -5,6 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "hass-xiaomi-m365"
 dynamic = ["version"]
+requires-python = ">=3.14.2"
+
+[project.optional-dependencies]
+lint = [
+    "ruff==0.17.0",
+]
 
 [tool.hatch.version]
 source = "vcs"
@@ -13,17 +19,39 @@ source = "vcs"
 packages = ["custom_components/xiaomi_m365"]
 
 [tool.hatch.envs.default]
-dependencies = [
-    "black",
-]
+# Through an extra rather than env dependencies, so Dependabot can see the pin.
+features = ["lint"]
 
 [tool.hatch.envs.default.scripts]
 test = [
-    "black --check --diff .",
+    "ruff format --check --diff .",
+    "ruff check .",
 ]
 lint = [
-    "black ."
+    "ruff format .",
+    "ruff check --fix .",
 ]
 
-[tool.black]
-target-version = ["py313"]
+[tool.ruff]
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "ASYNC", "B", "BLE", "C4", "D", "E", "F", "FURB", "G", "I", "LOG", "PERF",
+    "PIE", "PL", "PT", "RET", "RUF", "S", "SIM", "SLF", "T20", "TRY", "UP", "W",
+]
+ignore = [
+    "ASYNC109", # per-step protocol waits, not a caller's deadline
+    "D203",    # conflicts with D211
+    "D213",    # conflicts with D212
+    "E501",    # line length is the formatter's job
+    "PLR2004", # protocol offsets and lengths are magic by nature
+    "S101",    # asserts narrow types in flow steps
+    "TRY003",  # long messages carry the scooter's address
+]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+known-first-party = ["homeassistant"]
+combine-as-imports = true
+split-on-trailing-comma = false

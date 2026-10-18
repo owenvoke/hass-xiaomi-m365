@@ -12,7 +12,7 @@ CONF_ADDRESS: Final = "address"
 
 # Pairing token, hex-encoded, for firmware that gates the UART behind Xiaomi's
 # authentication. Absent on entries for scooters that answer without it.
-CONF_TOKEN: Final = "token"
+CONF_TOKEN: Final = "token"  # noqa: S105 - a config key, not a secret
 
 # Seconds between polls. Configurable because the useful rate depends on what
 # the scooter is being watched for: speed while riding wants a short interval,

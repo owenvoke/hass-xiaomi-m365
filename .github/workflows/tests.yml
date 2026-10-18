@@ -40,8 +40,9 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install Python dependencies
-        run: python3 -m pip install black
+      - name: Install Hatch
+        run: python3 -m pip install hatch
 
+      # Runs the Ruff version pinned in pyproject.toml.
       - name: Style Check
-        run: black --color --check .
+        run: hatch run test

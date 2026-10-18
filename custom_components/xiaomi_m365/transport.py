@@ -27,12 +27,7 @@ from homeassistant.core import HomeAssistant, callback
 from .auth import MiAuth, MiAuthError
 from .const import NOTIFY_CHAR_UUID, WRITE_CHAR_UUID
 from .crypto import EncryptedFrameReader, MiSession
-from .exceptions import (
-    M365AuthError,
-    M365ConnectionError,
-    M365DeviceAsleep,
-    M365Error,
-)
+from .exceptions import M365AuthError, M365ConnectionError, M365DeviceAsleep, M365Error
 from .protocol import (
     LEN_GENERAL_INFO,
     REG_GENERAL_INFO,
