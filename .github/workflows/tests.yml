@@ -47,9 +47,11 @@ jobs:
       - name: Install Hatch
         run: python3 -m pip install hatch
 
-      # Runs the Ruff version pinned in pyproject.toml.
+      # Runs the Ruff version pinned in pyproject.toml, annotating PRs inline.
       - name: Style Check
         run: hatch run lint
+        env:
+          RUFF_OUTPUT_FORMAT: github
 
   pytest:
     runs-on: ubuntu-latest
