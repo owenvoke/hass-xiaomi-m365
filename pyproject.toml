@@ -23,7 +23,7 @@ test = [
     "bluetooth-data-tools==1.29.24",
     "dbus-fast==5.2.0",
     "habluetooth==7.1.2",
-    "serialx==1.14.0",
+    "serialx==1.15.0",
 ]
 
 [tool.hatch.version]
