@@ -12,7 +12,7 @@ lint = [
     "ruff==0.17.1",
 ]
 test = [
-    "pytest-homeassistant-custom-component==0.13.373",
+    "pytest-homeassistant-custom-component==0.13.375",
     # Home Assistant's bluetooth integration, which this one depends on, keeps
     # its requirements in its manifest rather than in the package metadata.
     "aiousbwatcher==1.1.2",
