@@ -16,7 +16,7 @@ test = [
     # Home Assistant's bluetooth integration, which this one depends on, keeps
     # its requirements in its manifest rather than in the package metadata.
     "aiousbwatcher==1.1.2",
-    "bleak==3.0.2",
+    "bleak==3.1.0",
     "bleak-retry-connector==4.7.1",
     "bluetooth-adapters==2.4.0",
     "bluetooth-auto-recovery==1.6.4",
